@@ -1,28 +1,37 @@
 #include <stdio.h>
 
 #include "lexer.h"
+#include "parser.h"
+
+void print_tokens(token_t *tokens)
+{
+    emit("Type: %d, Lexeme: %s", tokens->flag, tokens->lexeme);
+
+    if (tokens->next != NULL)
+    {
+        print_tokens(tokens->next);
+    }
+}
 
 int main()
 {
-    list_t tokens;
-    list_node_t *a;
-    token_t *token;
+    token_t *tokens, *tokens_cpy;
+    expr_t *expr;
     char user_input[80];
-    int i;
 
     fgets(user_input, 79, stdin);
 
     tokens = tokenize(user_input);
-    emit("%d", tokens.length);
 
-    for (i = 0; i < tokens.length; i++)
-    {
-        a = list_at(&tokens, i);
-        token = (token_t *) a->data;
-        emit("Type: %d, Lexeme: %s", token->flag, token->lexeme);
-    }
+    print_tokens(tokens);
 
-    list_delete(&tokens);
+    tokens_cpy = tokens;
+
+    expr = parse_expr(&tokens_cpy);
+
+    delete_tokens(tokens);
+
+    delete_expr(expr);
 
     return 0;
 }
