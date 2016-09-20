@@ -20,14 +20,14 @@ typedef enum
     ADDOP_ADD,
     ADDOP_SUB,
     ADDOP_NONE,
-} mulop_t;
+} addop_t;
 
 typedef enum
 {
     MULOP_MUL,
     MULOP_DIV,
     MULOP_NONE
-} addop_t;
+} mulop_t;
 
 // Forward decl. for factor_union_t
 typedef struct expr expr_t;

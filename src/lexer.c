@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "lexer.h"
 
 token_t * tokenize(char *line)
@@ -35,9 +38,9 @@ token_t * tokenize(char *line)
         }
         else
         {
-            emit("Error: Count not parse line at position %d", pos);
-            emit("Character: %c", line[pos]);
-            emit("%s", line);
+            printf("Error: Count not parse line at position %d\n", pos);
+            printf("Character: %c\n", line[pos]);
+            printf("%s\n", line);
             break;
         }
 
@@ -120,7 +123,7 @@ token_t parse_name(char *line, int pos, int *end_pos)
     *end_pos = position - 1;
 
     token.lexeme = raw_name;
-    token.length = length - 1;
+    token.length = length;
     token.flag = FLAG_NAME;
     token.next = NULL;
 

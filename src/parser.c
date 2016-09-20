@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "parser.h"
-#include "util/io.h"
 
 addop_t parse_addop(token_t **tokens)
 {
@@ -72,7 +71,7 @@ ident_t * parse_ident(token_t **tokens)
     ident->name = malloc((**tokens).length + 1);
     ident->length = (**tokens).length;
 
-    strncpy((**tokens).lexeme, ident->name, ident->length);
+    strncpy(ident->name, (**tokens).lexeme,  ident->length);
     ident->name[ident->length + 1] = '\0';
 
     // Next token

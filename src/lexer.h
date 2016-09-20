@@ -3,9 +3,6 @@
 
 #include <string.h>
 
-#include "util/assert.h"
-#include "util/io.h"
-
 #define DEFAULT_MAX_LEX_LENGTH 20
 
 typedef enum
