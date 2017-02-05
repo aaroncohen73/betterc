@@ -85,6 +85,7 @@ int main()
     expr_t *expr;
     char user_input[80];
 
+    printf("> Type a mathematical expression: ");
     fgets(user_input, 79, stdin);
 
     tokens = tokenize(user_input);
