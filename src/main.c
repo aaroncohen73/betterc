@@ -30,7 +30,7 @@ void print_term(term_t *term)
             printf("%s\n", term->factor->data.ident->name);
             break;
         case FACTOR_NUM:
-            printf("%d\n", term->factor->data.num->num);
+            printf("%ld\n", term->factor->data.num->num);
             break;
     }
 
