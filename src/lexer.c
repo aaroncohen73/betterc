@@ -3,14 +3,13 @@
 
 #include "lexer.h"
 
-token_t * tokenize(char *line)
+
+struct token * tokenize(char *line)
 {
-    token_t *token_base = NULL, *token_current, token_next;
-    int line_len, pos;
+    struct token *base = NULL, *cur, *next, t;
+    size_t pos_offset;
 
-    line_len = strlen(line);
-
-    for (pos = 0; pos < line_len; pos++)
+    for (size_t pos = 0; pos < strlen(line); pos++)
     {
         if (IS_WHITE(line[pos]))
         {
@@ -18,182 +17,241 @@ token_t * tokenize(char *line)
         }
         else if (IS_NUMBER(line[pos]))
         {
-            token_next = parse_number(line, pos, &pos);
+            pos_offset = parse_number(&t, line, pos);
+
+            if (pos_offset == 0)
+                goto tokenize_error;
+
+            pos += pos_offset - 1;
         }
         else if (IS_ALPHA(line[pos]))
         {
-            token_next = parse_name(line, pos, &pos);
+            pos_offset = parse_name(&t, line, pos);
+
+            if (pos_offset == 0)
+                goto tokenize_error;
+
+            pos += pos_offset - 1;
         }
         else if (IS_OPERATOR(line[pos]))
         {
-            token_next = parse_operator(line, pos, &pos); 
+            pos_offset = parse_operator(&t, line, pos); 
+
+            if (pos_offset == 0)
+                goto tokenize_error;
+
+            pos += pos_offset - 1;
         }
         else if (IS_ENCLOSURE(line[pos]))
         {
-            token_next = parse_enclosure(line, pos);
+            pos_offset = parse_enclosure(&t, line, pos);
+
+            if (pos_offset == 0)
+                goto tokenize_error;
+
+            pos += pos_offset - 1;
         }
         else if (IS_SEPARATOR(line[pos]))
         {
-            token_next = parse_separator(line, pos);
+            pos_offset = parse_separator(&t, line, pos);
+
+            if (pos_offset == 0)
+                goto tokenize_error;
+
+            pos += pos_offset - 1;
         }
         else
         {
-            printf("Error: Count not parse line at position %d\n", pos);
+            tokenize_error:
+
+            delete_tokens(base);
+            base = NULL;
+
+            printf("Error: Count not tokenize line at position %zd\n", pos);
             printf("Character: %c\n", line[pos]);
             printf("%s\n", line);
             break;
         }
 
-        if (token_base == NULL)
+        next = malloc(sizeof(struct token));
+        memcpy(next, &t, sizeof(struct token));
+        
+        if (base == NULL)
         {
-            token_base = malloc(sizeof(token_t));
-            *token_base = token_next;
-            token_current = token_base;
+            base = cur = next;
         }
         else
         {
-            token_current->next = malloc(sizeof(token_t));
-            memcpy(token_current->next, &token_next, sizeof(token_t));
-            token_current = token_current->next;
+            cur->next = next;
+            cur = next;
         }
     }
 
-    return token_base;
+    return base;
 }
 
-void delete_tokens(token_t *tokens)
+
+void delete_tokens(struct token *base)
 {
-    token_t *next = tokens->next;
+    struct token *current, *next;
 
-    free(tokens->lexeme);
-    free(tokens);
-
-    if (next != NULL)
+    current = base;
+    while (current != NULL)
     {
-        delete_tokens(next);
+        next = current->next;
+
+        free(current->lexeme);
+        free(current);
+
+        current = next;
     }
 }
 
-token_t parse_number(char *line, int pos, int *end_pos)
+
+size_t parse_number(struct token *t, char *line, size_t pos)
 {
-    token_t token;
     char *raw_number;
-    int length = 0, position = pos;
+    size_t length = 0, capacity = DEFAULT_MAX_LEX_LENGTH;
     int decimal = 0;
 
-    raw_number = malloc(DEFAULT_MAX_LEX_LENGTH);
+    if (t == NULL || line == NULL)
+        return 0;
 
-    while (IS_NUMBER(line[position]) || 
-            (line[position] == '.' && !decimal))
+    raw_number = malloc(capacity);
+
+    while (IS_NUMBER(line[pos]) || (line[pos] == '.' && !decimal))
     {
-        if (line[position] == '.')
+        if (line[pos] == '.')
             decimal = 1;
 
-        raw_number[length++] = line[position++];
+        raw_number[length++] = line[pos++];
+
+        // capacity - 1 so we ensure space for '\0'
+        if (length >= capacity - 1)
+        {
+            capacity *= 2;
+            raw_number = realloc(raw_number, capacity);
+        }
     }
 
     raw_number[length] = '\0';
 
-    *end_pos = position - 1;
+    t->lexeme = raw_number;
+    t->length = length; 
+    t->flag = TOKEN_FLAG_NUMBER;
+    t->next = NULL;
 
-    token.lexeme = raw_number;
-    token.length = length - 1; 
-    token.flag = FLAG_NUMBER;
-    token.next = NULL;
-
-    return token;
+    return length;
 }
 
-token_t parse_name(char *line, int pos, int *end_pos)
+
+size_t parse_name(struct token *t, char *line, size_t pos)
 {
-    token_t token;
     char *raw_name;
-    int length = 0, position = pos;
+    size_t length = 0, capacity = DEFAULT_MAX_LEX_LENGTH;
 
-    raw_name = malloc(DEFAULT_MAX_LEX_LENGTH);
+    if (t == NULL || line == NULL)
+        return 0;
 
-    while (IS_ALPHA(line[position]) ||
-            (IS_NUMBER(line[position]) && length > 0))
+    raw_name = malloc(capacity);
+
+    while (IS_ALPHA(line[pos]) || (IS_NUMBER(line[pos]) && length > 0))
     {
-        raw_name[length++] = line[position++];
+        raw_name[length++] = line[pos++];
+
+        // capacity - 1 so we ensure space for '\0'
+        if (length >= capacity - 1)
+        {
+            capacity *= 2;
+            raw_name = realloc(raw_name, capacity);
+        }
     }
 
     raw_name[length] = '\0';
 
-    *end_pos = position - 1;
+    t->lexeme = raw_name;
+    t->length = length;
+    t->flag = TOKEN_FLAG_NAME;
+    t->next = NULL;
 
-    token.lexeme = raw_name;
-    token.length = length;
-    token.flag = FLAG_NAME;
-    token.next = NULL;
-
-    return token;
+    return length;
 }
 
-token_t parse_operator(char *line, int pos, int *end_pos)
+
+size_t parse_operator(struct token *t, char *line, size_t pos)
 {
-    token_t token;
     char *raw_op;
-    int length = 0, position = pos;
+    size_t length = 0, capacity = DEFAULT_MAX_LEX_LENGTH;
 
-    raw_op = malloc(DEFAULT_MAX_LEX_LENGTH);
+    if (t == NULL || line == NULL)
+        return 0;
 
-    while (IS_OPERATOR(line[position]))
+    raw_op = malloc(capacity);
+
+    while (IS_OPERATOR(line[pos]))
     {
-        raw_op[length++] = line[position++];
+        raw_op[length++] = line[pos++];
+
+        // capacity - 1 so we ensure space for '\0'
+        if (length >= capacity - 1)
+        {
+            capacity *= 2;
+            raw_op = realloc(raw_op, capacity);
+        }
     }
 
     raw_op[length] = '\0';
 
-    *end_pos = position - 1;
+    t->lexeme = raw_op;
+    t->length = length;
+    t->flag = TOKEN_FLAG_OP;
+    t->next = NULL;
 
-    token.lexeme = raw_op;
-    token.length = length - 1;
-    token.flag = FLAG_OP;
-    token.next = NULL;
-    // TODO: figure out good way to detect operands
-    return token;
+    return length;
 }
-token_t parse_enclosure(char *line, int pos)
+
+
+size_t parse_enclosure(struct token *t, char *line, size_t pos)
 {
-    token_t token;
     char *raw_enc;
+
+    if (t == NULL || line == NULL)
+        return 0;
 
     raw_enc = malloc(2);
     raw_enc[0] = line[pos];
     raw_enc[1] = '\0';
 
-    token.lexeme = raw_enc;
-    token.length = 1;
-    token.flag = FLAG_ENCLOSURE;
-    token.next = NULL;
+    t->lexeme = raw_enc;
+    t->length = 1;
+    t->flag = TOKEN_FLAG_ENCLOSURE;
+    t->next = NULL;
 
-    if (line[pos] == '(' ||
-            line[pos] == '[' ||
-            line[pos] == '{')
+    if (line[pos] == '(' || line[pos] == '[' || line[pos] == '{')
     {
-        token.orientation = -1;
+        t->orientation = -1;
     }
     else
     {
-        token.orientation = 1;
+        t->orientation = 1;
     }
 
-    return token;
+    return 1;
 }
-token_t parse_separator(char *line, int pos)
+
+
+size_t parse_separator(struct token *t, char *line, size_t pos)
 {
-    token_t token;
     char *raw_sep;
 
     raw_sep = malloc(2);
     raw_sep[0] = line[pos];
     raw_sep[1] = '\0';
 
-    token.lexeme = raw_sep;
-    token.length = 1;
-    token.flag = FLAG_SEPARATOR;
-    token.next = NULL;
+    t->lexeme = raw_sep;
+    t->length = 1;
+    t->flag = TOKEN_FLAG_SEPARATOR;
+    t->next = NULL;
 
-    return token;
+    return 1;
 }

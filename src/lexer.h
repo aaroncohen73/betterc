@@ -1,34 +1,33 @@
 #ifndef LEXER_INCLUDE_H
 #define LEXER_INCLUDE_H
 
+#include <stdlib.h>
 #include <string.h>
 
 #define DEFAULT_MAX_LEX_LENGTH 20
 
-typedef enum
+enum token_flag
 {
-    FLAG_NUMBER,
-    FLAG_NAME,
-    FLAG_OP, // (Binary) arithmetic, assignment, comparison
-    FLAG_ENCLOSURE, // Parentheses, curly braces, square brackets and the like
-    FLAG_SEPARATOR // Semicolons and commas
-} flag_t;
+    TOKEN_FLAG_NUMBER,
+    TOKEN_FLAG_NAME,
+    TOKEN_FLAG_OP, // (Binary) arithmetic, assignment, comparison
+    TOKEN_FLAG_ENCLOSURE, // Parentheses, curly braces, square brackets, etc.
+    TOKEN_FLAG_SEPARATOR // Semicolons and commas
+};
 
 struct token
 {
     char *lexeme; // Null-terminated string
-    unsigned int length;
-    flag_t flag; // Flag indicating token type
+    size_t length;
+    enum token_flag flag; // Flag indicating token type
     int operands; // Used for operator tokens. Unary (1) or binary (2)
     int orientation; // Used for enclosure tokens. -1 = left, 1 = right
     struct token *next;
 };
 
-typedef struct token token_t;
+struct token * tokenize(char *);
 
-token_t * tokenize(char *line);
-
-void delete_tokens(token_t *tokens);
+void delete_tokens(struct token *);
 
 #define IS_WHITE(c) (c == 0x09 || \
                      c == 0x20 || \
@@ -59,10 +58,10 @@ void delete_tokens(token_t *tokens);
 #define IS_SEPARATOR(c) (c == ',' || \
                          c == ';')
 
-token_t parse_number   (char *line, int pos, int *end_pos);
-token_t parse_name     (char *line, int pos, int *end_pos);
-token_t parse_operator (char *line, int pos, int *end_pos);
-token_t parse_enclosure(char *line, int pos);
-token_t parse_separator(char *line, int pos);
+size_t parse_number   (struct token *, char *, size_t);
+size_t parse_name     (struct token *, char *, size_t);
+size_t parse_operator (struct token *, char *, size_t);
+size_t parse_enclosure(struct token *, char *, size_t);
+size_t parse_separator(struct token *, char *, size_t);
 
 #endif

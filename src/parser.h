@@ -3,86 +3,31 @@
 
 #include "lexer.h"
 
-typedef struct
+struct ast_atom
 {
-    // Just signed long ints for now
-    long num;
-} num_t;
-
-typedef struct
-{
-    char *name;
-    unsigned int length;
-} ident_t;
-
-typedef enum
-{
-    ADDOP_ADD,
-    ADDOP_SUB,
-    ADDOP_NONE,
-} addop_t;
-
-typedef enum
-{
-    MULOP_MUL,
-    MULOP_DIV,
-    MULOP_NONE
-} mulop_t;
-
-// Forward decl. for factor_union_t
-typedef struct expr expr_t;
-
-typedef union
-{
-    expr_t *expr;
-    ident_t *ident;
-    num_t *num;
-} factor_union_t;
-
-typedef enum
-{
-    FACTOR_EXPRESSION,
-    FACTOR_IDENTIFY,
-    FACTOR_NUM
-} factor_enum_t;
-
-typedef struct
-{
-    factor_union_t data;
-    factor_enum_t type;
-} factor_t;
-
-struct term
-{
-    factor_t *factor;
-    mulop_t mulop;
-    struct term *next;
+    double num;
 };
 
-typedef struct term term_t;
-
-struct expr
+enum ast_type
 {
-    term_t *term;
-    addop_t addop;
-    struct expr *next;
+    AST_TYPE_LITERAL,
+    AST_TYPE_OPERATOR_ADD,
+    AST_TYPE_OPERATOR_SUBTRACT,
+    AST_TYPE_OPERATOR_MULTIPLY,
+    AST_TYPE_OPERATOR_DIVIDE,
 };
 
-//typedef struct expr expr_t;
+struct ast_node
+{
+    enum ast_type type;
 
-addop_t parse_addop(token_t **tokens);
-mulop_t parse_mulop(token_t **tokens);
+    struct ast_atom *atom;
+    struct ast_node *next_sib;
+    struct ast_node *first_child;
+};
 
-num_t * parse_num(token_t **tokens);
-ident_t * parse_ident(token_t **tokens);
-factor_t * parse_factor(token_t **tokens);
-term_t * parse_term(token_t **tokens);
-expr_t * parse_expr(token_t **tokens);
+struct ast_node * create_ast_node(void);
 
-void delete_num(num_t *num);
-void delete_ident(ident_t *ident);
-void delete_factor(factor_t *factor);
-void delete_term(term_t *term);
-void delete_expr(expr_t *expr);
+struct ast_node * parse_tokens(struct token *);
 
 #endif
